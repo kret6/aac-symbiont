@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AAC Symbiont PAGER</title>
+    <title>AAC 2x2 BIG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Wysoki kontrast i fix wysokości */
+        /* Styl Wysokiego Kontrastu */
         body {
             height: 100vh;
             height: 100dvh;
-            background-color: #000000; /* Głęboka czerń */
-            color: #FFFF00; /* Czysta żółć */
+            background-color: #000000;
+            color: #FFFF00; /* Żółty */
             touch-action: manipulation; 
             user-select: none; 
             -webkit-user-select: none; 
@@ -19,10 +19,10 @@
         }
         .btn-press:active { 
             transform: scale(0.95); 
-            background-color: #FACC15; /* Ciemniejsza żółć przy kliku */
+            background-color: #FACC15; 
             color: #000;
         }
-        /* Ramki dla słabowidzących - grube i wyraźne */
+        /* Bardzo grube ramki */
         .high-contrast-border {
             border: 4px solid #FFFF00;
         }
@@ -30,35 +30,37 @@
 </head>
 <body class="w-screen flex flex-col p-2 gap-2 overflow-hidden">
 
-    <div id="display" class="bg-gray-900 text-white text-5xl md:text-7xl font-black rounded flex items-center justify-center p-2 h-[15vh] high-contrast-border text-center break-words uppercase">
+    <div id="display" class="bg-gray-900 text-white text-5xl md:text-7xl font-black flex items-center justify-center p-2 h-[15vh] high-contrast-border text-center break-words uppercase shadow-lg">
         ...
     </div>
 
     <div id="grid-container" class="grid grid-cols-2 gap-2 flex-grow min-h-0">
         </div>
 
-    <div class="flex gap-2 h-[18vh] min-h-[100px] mt-1">
-        <button onclick="prevPage()" class="w-1/4 bg-gray-800 text-white text-4xl font-black rounded high-contrast-border btn-press">&lt;&lt;</button>
+    <div class="flex gap-2 h-[18vh] min-h-[100px] mt-1 safe-bottom">
         
-        <div class="flex flex-col w-1/4 gap-1">
-             <button onclick="addSpace()" class="flex-grow bg-gray-700 text-yellow-300 text-xl font-bold rounded border-2 border-yellow-300 btn-press">_</button>
-             <button onclick="backspace()" class="flex-grow bg-red-900 text-white text-xl font-bold rounded border-2 border-red-500 btn-press">DEL</button>
+        <button onclick="prevPage()" class="w-1/6 bg-gray-800 text-white text-4xl font-bold high-contrast-border btn-press flex items-center justify-center rounded">&lt;</button>
+        
+        <div class="w-1/4 flex flex-col gap-1">
+             <button onclick="addSpace()" class="flex-grow bg-gray-700 text-yellow-300 text-2xl font-bold high-contrast-border btn-press rounded">SPACJA</button>
+             <button onclick="backspace()" class="flex-grow bg-red-900 text-white text-2xl font-bold border-4 border-red-500 btn-press rounded">DEL</button>
         </div>
         
-        <button onclick="nextPage()" class="flex-grow bg-yellow-400 text-black text-5xl font-black rounded border-4 border-white btn-press">DALEJ &gt;&gt;</button>
+        <button onclick="speak()" class="w-1/4 bg-green-700 text-white text-4xl font-black border-4 border-green-500 btn-press rounded shadow-lg uppercase">MÓW</button>
+        
+        <button onclick="nextPage()" class="flex-grow bg-yellow-400 text-black text-5xl font-black border-4 border-white btn-press flex items-center justify-center rounded shadow-lg">&gt;&gt;</button>
     </div>
 
-    <div class="flex justify-between text-gray-400 text-sm h-6 px-2">
-        <span id="page-indicator">Strona 1/5</span>
-        <button onclick="speak()" class="text-green-500 font-bold text-xl uppercase border border-green-500 px-4 rounded">MÓW (PLAY)</button>
+    <div class="flex justify-between text-gray-500 text-xs px-2 h-4 items-center">
+        <span id="page-indicator">STRONA 1</span>
+        <button onclick="downloadLogs()" class="uppercase hover:text-white">Pobierz Historię</button>
     </div>
 
 <script>
-    // --- DANE ---
-    // Alfabet podzielony na łatwe do ogarnięcia zestawy
-    // Możesz tu zmienić kolejność na np. najczęstsze litery: A, O, I, E, Z, N...
-    const fullAlphabet = "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŻŹ";
-    const itemsPerPage = 6; // ILE KAFELKÓW NA EKRANIE (Zmień na 4 jeśli 6 to za dużo)
+    // --- KONFIGURACJA 2x2 ---
+    // A-Z i Cyfry (żeby nie marnować miejsca na końcowych stronach)
+    const fullAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"; 
+    const itemsPerPage = 4; // UKŁAD 2x2
     
     let currentPage = 0;
     let currentText = "";
@@ -67,27 +69,23 @@
     const gridContainer = document.querySelector('#grid-container');
     const pageIndicator = document.getElementById('page-indicator');
 
-    // --- RENDEROWANIE STRONY ---
+    // --- RENDEROWANIE ---
     function renderPage() {
-        gridContainer.innerHTML = ""; // Wyczyść poprzednie
+        gridContainer.innerHTML = "";
         
         const start = currentPage * itemsPerPage;
         const end = start + itemsPerPage;
         const lettersToShow = fullAlphabet.slice(start, end).split('');
 
-        // Jeśli to ostatnia strona i brakuje liter, dodaj puste lub specjalne
-        
         lettersToShow.forEach(char => {
             const btn = document.createElement('button');
             btn.innerText = char;
-            // OGROMNE PRZYCISKI: Żółte litery na ciemnym tle (lub odwrotnie)
-            // Tutaj: Czarne tło, żółta ramka i litera (klasyczny high contrast)
-            btn.className = "bg-black text-yellow-300 text-7xl md:text-9xl font-black rounded high-contrast-border btn-press w-full h-full flex items-center justify-center shadow-lg";
+            // Styl: Text-8xl/9xl (Maksymalny możliwy)
+            btn.className = "bg-black text-yellow-300 text-7xl md:text-9xl font-black high-contrast-border btn-press w-full h-full flex items-center justify-center shadow-2xl rounded-lg";
             btn.onclick = () => addChar(char);
             gridContainer.appendChild(btn);
         });
 
-        // Aktualizacja licznika stron
         const totalPages = Math.ceil(fullAlphabet.length / itemsPerPage);
         pageIndicator.innerText = `STRONA ${currentPage + 1} / ${totalPages}`;
     }
@@ -99,8 +97,7 @@
             currentPage++;
             renderPage();
         } else {
-            // Pętla? Wróć na początek?
-            currentPage = 0; 
+            currentPage = 0; // Pętla
             renderPage();
         }
     }
@@ -112,7 +109,7 @@
         }
     }
 
-    // --- LOGIKA PISANIA ---
+    // --- LOGIKA ---
     function updateDisplay() {
         display.innerText = currentText === "" ? "..." : currentText;
     }
@@ -138,13 +135,33 @@
         utterance.lang = 'pl-PL';
         utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
+        saveLog(currentText);
     }
 
-    // Start
-    renderPage();
+    function saveLog(text) {
+        const logs = JSON.parse(localStorage.getItem('aac_logs') || "[]");
+        const timestamp = new Date().toLocaleString('pl-PL');
+        logs.push(`[${timestamp}] ${text}`);
+        localStorage.setItem('aac_logs', JSON.stringify(logs));
+    }
+
+    function downloadLogs() {
+        const logs = JSON.parse(localStorage.getItem('aac_logs') || "[]");
+        if (logs.length === 0) {
+            alert("Pusto"); return;
+        }
+        const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aac_log_big.txt`;
+        a.click();
+    }
 
     // Blokada zoomu
     document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+    renderPage();
 </script>
 </body>
 </html>
