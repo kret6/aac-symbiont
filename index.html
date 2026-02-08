@@ -3,69 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AAC Symbiont MAX</title>
+    <title>AAC Symbiont PAGER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* FIX wysokości i blokada gestów */
+        /* Wysoki kontrast i fix wysokości */
         body {
             height: 100vh;
             height: 100dvh;
+            background-color: #000000; /* Głęboka czerń */
+            color: #FFFF00; /* Czysta żółć */
             touch-action: manipulation; 
             user-select: none; 
             -webkit-user-select: none; 
             overscroll-behavior: none;
         }
-        .safe-bottom {
-            padding-bottom: env(safe-area-inset-bottom, 20px);
-        }
-        /* Efekt wciskania */
         .btn-press:active { 
-            transform: scale(0.96); 
-            transition: transform 0.05s;
-            background-color: #1e40af; /* Ciemniejszy niebieski */
+            transform: scale(0.95); 
+            background-color: #FACC15; /* Ciemniejsza żółć przy kliku */
+            color: #000;
+        }
+        /* Ramki dla słabowidzących - grube i wyraźne */
+        .high-contrast-border {
+            border: 4px solid #FFFF00;
         }
     </style>
 </head>
-<body class="bg-gray-900 w-screen flex flex-col p-2 gap-2 overflow-hidden">
+<body class="w-screen flex flex-col p-2 gap-2 overflow-hidden">
 
-    <div id="display" class="bg-gray-800 text-white text-4xl md:text-6xl font-black rounded flex items-center justify-center p-2 h-[15vh] border-4 border-gray-600 shadow-lg text-center break-words leading-tight uppercase">
+    <div id="display" class="bg-gray-900 text-white text-5xl md:text-7xl font-black rounded flex items-center justify-center p-2 h-[15vh] high-contrast-border text-center break-words uppercase">
         ...
     </div>
 
-    <div class="grid grid-cols-5 gap-2 flex-grow min-h-0">
+    <div id="grid-container" class="grid grid-cols-2 gap-2 flex-grow min-h-0">
         </div>
 
-    <div class="flex gap-2 h-[15vh] min-h-[80px] mt-1 safe-bottom">
-        <button onclick="addSpace()" class="flex-grow bg-gray-600 active:bg-gray-500 text-white text-2xl md:text-4xl font-black rounded shadow-lg btn-press uppercase tracking-widest border-2 border-gray-500">ODSTĘP</button>
-        <button onclick="backspace()" class="w-1/4 bg-red-800 active:bg-red-700 text-white text-3xl md:text-5xl font-black rounded shadow-lg btn-press border-2 border-red-600">DEL</button>
-        <button onclick="speak()" class="w-1/4 bg-green-700 active:bg-green-600 text-white text-3xl md:text-5xl font-black rounded shadow-lg btn-press border-2 border-green-600">MÓW</button>
+    <div class="flex gap-2 h-[18vh] min-h-[100px] mt-1">
+        <button onclick="prevPage()" class="w-1/4 bg-gray-800 text-white text-4xl font-black rounded high-contrast-border btn-press">&lt;&lt;</button>
+        
+        <div class="flex flex-col w-1/4 gap-1">
+             <button onclick="addSpace()" class="flex-grow bg-gray-700 text-yellow-300 text-xl font-bold rounded border-2 border-yellow-300 btn-press">_</button>
+             <button onclick="backspace()" class="flex-grow bg-red-900 text-white text-xl font-bold rounded border-2 border-red-500 btn-press">DEL</button>
+        </div>
+        
+        <button onclick="nextPage()" class="flex-grow bg-yellow-400 text-black text-5xl font-black rounded border-4 border-white btn-press">DALEJ &gt;&gt;</button>
     </div>
 
-    <div class="flex justify-between items-center text-gray-600 text-[10px] px-1 h-4">
-        <span>v3.0 MAX</span>
-        <button onclick="downloadLogs()" class="hover:text-gray-400">LOGI</button>
+    <div class="flex justify-between text-gray-400 text-sm h-6 px-2">
+        <span id="page-indicator">Strona 1/5</span>
+        <button onclick="speak()" class="text-green-500 font-bold text-xl uppercase border border-green-500 px-4 rounded">MÓW (PLAY)</button>
     </div>
 
 <script>
-    // --- KONFIGURACJA MAX ---
-    // Usunięte polskie znaki, tylko bazowe A-Z
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    // --- DANE ---
+    // Alfabet podzielony na łatwe do ogarnięcia zestawy
+    // Możesz tu zmienić kolejność na np. najczęstsze litery: A, O, I, E, Z, N...
+    const fullAlphabet = "AĄBCĆDEĘFGHIJKLŁMNŃOÓPQRSŚTUVWXYZŻŹ";
+    const itemsPerPage = 6; // ILE KAFELKÓW NA EKRANIE (Zmień na 4 jeśli 6 to za dużo)
     
+    let currentPage = 0;
     let currentText = "";
+    
     const display = document.getElementById('display');
-    const grid = document.querySelector('.grid');
+    const gridContainer = document.querySelector('#grid-container');
+    const pageIndicator = document.getElementById('page-indicator');
 
-    // --- GENEROWANIE SIATKI ---
-    alphabet.split('').forEach(char => {
-        const btn = document.createElement('button');
-        btn.innerText = char;
-        // Stylizacja: Font Black (bardzo gruby), ogromny rozmiar
-        btn.className = "bg-blue-700 text-white text-4xl md:text-6xl font-black rounded shadow-md btn-press w-full h-full flex items-center justify-center border-2 border-blue-500";
-        btn.onclick = () => addChar(char);
-        grid.appendChild(btn);
-    });
+    // --- RENDEROWANIE STRONY ---
+    function renderPage() {
+        gridContainer.innerHTML = ""; // Wyczyść poprzednie
+        
+        const start = currentPage * itemsPerPage;
+        const end = start + itemsPerPage;
+        const lettersToShow = fullAlphabet.slice(start, end).split('');
 
-    // --- LOGIKA ---
+        // Jeśli to ostatnia strona i brakuje liter, dodaj puste lub specjalne
+        
+        lettersToShow.forEach(char => {
+            const btn = document.createElement('button');
+            btn.innerText = char;
+            // OGROMNE PRZYCISKI: Żółte litery na ciemnym tle (lub odwrotnie)
+            // Tutaj: Czarne tło, żółta ramka i litera (klasyczny high contrast)
+            btn.className = "bg-black text-yellow-300 text-7xl md:text-9xl font-black rounded high-contrast-border btn-press w-full h-full flex items-center justify-center shadow-lg";
+            btn.onclick = () => addChar(char);
+            gridContainer.appendChild(btn);
+        });
+
+        // Aktualizacja licznika stron
+        const totalPages = Math.ceil(fullAlphabet.length / itemsPerPage);
+        pageIndicator.innerText = `STRONA ${currentPage + 1} / ${totalPages}`;
+    }
+
+    // --- NAWIGACJA ---
+    function nextPage() {
+        const totalPages = Math.ceil(fullAlphabet.length / itemsPerPage);
+        if (currentPage < totalPages - 1) {
+            currentPage++;
+            renderPage();
+        } else {
+            // Pętla? Wróć na początek?
+            currentPage = 0; 
+            renderPage();
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            renderPage();
+        }
+    }
+
+    // --- LOGIKA PISANIA ---
     function updateDisplay() {
         display.innerText = currentText === "" ? "..." : currentText;
     }
@@ -87,40 +134,17 @@
 
     function speak() {
         if (!currentText) return;
-
         const utterance = new SpeechSynthesisUtterance(currentText);
         utterance.lang = 'pl-PL';
         utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
-
-        saveLog(currentText);
     }
 
-    function saveLog(text) {
-        const logs = JSON.parse(localStorage.getItem('aac_logs') || "[]");
-        const timestamp = new Date().toLocaleString('pl-PL');
-        logs.push(`[${timestamp}] ${text}`);
-        localStorage.setItem('aac_logs', JSON.stringify(logs));
-    }
+    // Start
+    renderPage();
 
-    function downloadLogs() {
-        const logs = JSON.parse(localStorage.getItem('aac_logs') || "[]");
-        if (logs.length === 0) {
-            alert("Brak historii.");
-            return;
-        }
-        const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `aac_log_${new Date().toISOString().slice(0,10)}.txt`;
-        a.click();
-    }
-
-    // Blokada zoomowania
-    document.addEventListener('dblclick', function(event) {
-        event.preventDefault();
-    }, { passive: false });
+    // Blokada zoomu
+    document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 </script>
 </body>
 </html>
